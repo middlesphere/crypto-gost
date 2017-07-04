@@ -1,10 +1,10 @@
 # crypto-gost
 
-A Clojure library designed to ... well, that part is up to you.
+A Clojure library to work with GOST algorithms (Russian cryptographic standards).
 
 ## Usage
 
-FIXME
+
 
 ## License
 

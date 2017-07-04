@@ -1,7 +1,7 @@
 (ns crypto-gost.digest-test
   (:require [clojure.test :as t :refer [deftest is]]
             [crypto-gost.common :refer [bytes-to-hex]]
-            [crypto-gost.digest :as sut]))
+            [crypto-gost.digest :as digest]))
 
 (def m1 "")
 (def m2 "The quick brown fox jumps over the lazy dog")
@@ -36,10 +36,10 @@
 
 
 (deftest gost-3411-94-test
-  (let [r1 (sut/digest-str :3411-94 m1)
-        r2 (sut/digest-str :3411-94 m2)
-        r3 (sut/digest-str :3411-94 m3)
-        r4 (sut/digest-str :3411-94 m4)]
+  (let [r1 (digest/digest-str :3411-94 m1)
+        r2 (digest/digest-str :3411-94 m2)
+        r3 (digest/digest-str :3411-94 m3)
+        r4 (digest/digest-str :3411-94 m4)]
     (is (= m1-3411-94 r1))
     (is (= m2-3411-94 r2))
     (is (= m3-3411-94 r3))
@@ -47,10 +47,10 @@
 
 
 (deftest gost-3411-2012-256-test
-  (let [r1 (sut/digest-str :3411-2012-256 m1)
-        r2 (sut/digest-str :3411-2012-256 m2)
-        r3 (sut/digest-str :3411-2012-256 m3)
-        r4 (sut/digest-str :3411-2012-256 m4)]
+  (let [r1 (digest/digest-str :3411-2012-256 m1)
+        r2 (digest/digest-str :3411-2012-256 m2)
+        r3 (digest/digest-str :3411-2012-256 m3)
+        r4 (digest/digest-str :3411-2012-256 m4)]
     (is (= m1-3411-12-256 r1))
     (is (= m2-3411-12-256 r2))
     (is (= m3-3411-12-256 r3))
@@ -58,10 +58,10 @@
 
 
 (deftest gost-3411-2012-512-test
-  (let [r1 (sut/digest-str :3411-2012-512 m1)
-        r2 (sut/digest-str :3411-2012-512 m2)
-        r3 (sut/digest-str :3411-2012-512 m3)
-        r4 (sut/digest-str :3411-2012-512 m4)]
+  (let [r1 (digest/digest-str :3411-2012-512 m1)
+        r2 (digest/digest-str :3411-2012-512 m2)
+        r3 (digest/digest-str :3411-2012-512 m3)
+        r4 (digest/digest-str :3411-2012-512 m4)]
     (is (= m1-3411-12-512 r1))
     (is (= m2-3411-12-512 r2))
     (is (= m3-3411-12-512 r3))
@@ -69,20 +69,20 @@
 
 
 (deftest gost-3411-all-streams
-  (let [r1 (bytes-to-hex (sut/digest-stream :3411-94 "test/data/m1.txt"))
-        r2 (bytes-to-hex (sut/digest-stream :3411-94 "test/data/m2.txt"))
-        r3 (bytes-to-hex (sut/digest-stream :3411-94 "test/data/m3.txt"))
-        r4 (bytes-to-hex (sut/digest-stream :3411-94 "test/data/m4.txt"))
+  (let [r1 (bytes-to-hex (digest/digest-stream :3411-94 "test/data/m1.txt"))
+        r2 (bytes-to-hex (digest/digest-stream :3411-94 "test/data/m2.txt"))
+        r3 (bytes-to-hex (digest/digest-stream :3411-94 "test/data/m3.txt"))
+        r4 (bytes-to-hex (digest/digest-stream :3411-94 "test/data/m4.txt"))
 
-        r5 (bytes-to-hex (sut/digest-stream :3411-2012-256 "test/data/m1.txt"))
-        r6 (bytes-to-hex (sut/digest-stream :3411-2012-256 "test/data/m2.txt"))
-        r7 (bytes-to-hex (sut/digest-stream :3411-2012-256 "test/data/m3.txt"))
-        r8 (bytes-to-hex (sut/digest-stream :3411-2012-256 "test/data/m4.txt"))
+        r5 (bytes-to-hex (digest/digest-stream :3411-2012-256 "test/data/m1.txt"))
+        r6 (bytes-to-hex (digest/digest-stream :3411-2012-256 "test/data/m2.txt"))
+        r7 (bytes-to-hex (digest/digest-stream :3411-2012-256 "test/data/m3.txt"))
+        r8 (bytes-to-hex (digest/digest-stream :3411-2012-256 "test/data/m4.txt"))
 
-        r9 (bytes-to-hex (sut/digest-stream :3411-2012-512 "test/data/m1.txt"))
-        r10 (bytes-to-hex (sut/digest-stream :3411-2012-512 "test/data/m2.txt"))
-        r11 (bytes-to-hex (sut/digest-stream :3411-2012-512 "test/data/m3.txt"))
-        r12 (bytes-to-hex (sut/digest-stream :3411-2012-512 "test/data/m4.txt"))]
+        r9 (bytes-to-hex (digest/digest-stream :3411-2012-512 "test/data/m1.txt"))
+        r10 (bytes-to-hex (digest/digest-stream :3411-2012-512 "test/data/m2.txt"))
+        r11 (bytes-to-hex (digest/digest-stream :3411-2012-512 "test/data/m3.txt"))
+        r12 (bytes-to-hex (digest/digest-stream :3411-2012-512 "test/data/m4.txt"))]
 
     (is (= m1-3411-94 r1))
     (is (= m2-3411-94 r2))
@@ -101,9 +101,9 @@
 
 
 (deftest hmac-all
-  (let [r1 (bytes-to-hex (sut/hmac-stream :3411-94 "test/data/m3.txt" const-seed))
-        r2 (bytes-to-hex (sut/hmac-stream :3411-2012-256 "test/data/m3.txt" const-seed))
-        r3 (bytes-to-hex (sut/hmac-stream :3411-2012-512 "test/data/m3.txt" const-seed))]
+  (let [r1 (bytes-to-hex (digest/hmac-stream :3411-94 "test/data/m3.txt" const-seed))
+        r2 (bytes-to-hex (digest/hmac-stream :3411-2012-256 "test/data/m3.txt" const-seed))
+        r3 (bytes-to-hex (digest/hmac-stream :3411-2012-512 "test/data/m3.txt" const-seed))]
 
     (is (= r1 m3-hmac-3411-94))
     (is (= r2 m3-hmac-3411-12-256))
