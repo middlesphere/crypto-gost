@@ -38,3 +38,25 @@
   (let [plain-text (.getBytes m3)
         mac (sut/mac-gen k plain-text)]
     (is (= "d34bd048" (common/bytes-to-hex mac)))))
+
+
+(deftest gen-secret-key
+  (let [k1 (sut/gen-secret-key)
+        k2 (sut/gen-secret-key)
+        k1-hex (common/bytes-to-hex k1)
+        k2-hex (common/bytes-to-hex k2)]
+    (is (= 32 (alength k1)))
+    (is (= 32 (alength k2)))
+    (is (not= k1-hex k2-hex))))
+
+(deftest gen-secret-key-from-pwd
+  (let [pwd "hello, world"
+        wrong-pwd "hello world"
+        etalon-hex "09367bbc879a28ec5d416d9473ea4eff9d893967add7466e366360edeccad25b"
+        sec-key (sut/gen-secret-key-from-pwd pwd)
+        hex-key (common/bytes-to-hex sec-key)
+        wrong-key (sut/gen-secret-key-from-pwd wrong-pwd)
+        hex-wrong-key (common/bytes-to-hex wrong-key)]
+    (is (= etalon-hex hex-key))
+    (is (not= etalon-hex hex-wrong-key))))
+

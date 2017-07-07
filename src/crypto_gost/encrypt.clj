@@ -3,9 +3,13 @@
   (:require [clojure.java.io :refer [input-stream output-stream]]
             [crypto-gost.common :as common])
   (:import [java.io ByteArrayInputStream ByteArrayOutputStream DataInputStream]
-           java.security.Security
-           [javax.crypto Cipher CipherInputStream CipherOutputStream Mac]
+           [java.security Key SecureRandom Security]
+           [javax.crypto Cipher CipherInputStream CipherOutputStream KeyGenerator Mac]
            [javax.crypto.spec IvParameterSpec SecretKeySpec]
+           org.bouncycastle.crypto.digests.GOST3411Digest
+           org.bouncycastle.crypto.generators.PKCS12ParametersGenerator
+           org.bouncycastle.crypto.params.KeyParameter
+           org.bouncycastle.crypto.PBEParametersGenerator
            org.bouncycastle.jce.provider.BouncyCastleProvider))
 
 (defn encrypt-cfb
@@ -116,7 +120,38 @@
     (.doFinal mac mac-buf 0)
     mac-buf))
 
- 
+
+
+(defn gen-secret-key
+  "generate secret key for GOST 28147-89 using SecureRandom class
+  return 32 bytes array of secret key"
+  []
+  (Security/addProvider (BouncyCastleProvider.))
+  (let [key-gen (KeyGenerator/getInstance "GOST28147" "BC")
+        _ (.init key-gen (SecureRandom.))
+        ^Key key (.generateKey key-gen)
+        bytes-key (.getEncoded key)]
+    bytes-key))
+
+
+
+(defn gen-secret-key-from-pwd
+  "generate secret key from password using PKCS12
+  return bytes array 32 bytes with secret key."
+  [^String password]
+  (Security/addProvider (BouncyCastleProvider.))
+  (let [salt (.getBytes "2017-07-07-14-59-23")
+        iter-count 2048
+        pass-key (PBEParametersGenerator/PKCS12PasswordToBytes (.toCharArray password))
+        pbe-gen (PKCS12ParametersGenerator. (GOST3411Digest.))
+        _ (.init pbe-gen pass-key salt iter-count)
+        params (.generateDerivedParameters pbe-gen 256)
+        ^Key key (SecretKeySpec. (-> ^KeyParameter params .getKey) "GOST28147")
+        bytes-key (.getEncoded key)]
+    bytes-key))
+
+
+
 
 
 

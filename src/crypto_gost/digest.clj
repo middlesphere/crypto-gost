@@ -4,7 +4,6 @@
             [crypto-gost.common :as common])
   (:import java.security.Security
            [org.bouncycastle.crypto.digests GOST3411_2012_256Digest GOST3411_2012_512Digest GOST3411Digest]
-           org.bouncycastle.crypto.generators.PKCS5S1ParametersGenerator
            org.bouncycastle.crypto.macs.HMac
            org.bouncycastle.crypto.params.KeyParameter
            org.bouncycastle.jce.provider.BouncyCastleProvider))
@@ -91,4 +90,5 @@
         (if (<= n 0)
           (do (.doFinal hmac-fn hmac-buffer 0) hmac-buffer)
           (recur (do (.update hmac-fn buf 0 n) (.read in buf))))))))
+
 
