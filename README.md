@@ -30,6 +30,7 @@ Add necessary namespaces to ns form:
             [crypto-gost.encrypt]
             [crypto-gost.digest]
             [crypto-gost.sign])
+(:import java.security.SecureRandom)
 ```
 
 ### Key generation
@@ -60,7 +61,8 @@ Note: calling gen-secret-key-from-pwd with same password always returns same sec
 To generate private and public keypair for GOST3410-2001 use crypto-gost.sign/gen-keypair.
 
 ```clojure
- ;;generate GOST 3410-2001 KeyPair, save it to a file and load it from file.
+ ;;generate GOST 3410-2001 KeyPair, save it to a files "gost-keypair.priv" / "gost-keypair.pub"
+ ;;and then load it from files.
   (let [key-pair (crypto-gost.sign/gen-keypair)
         _ (crypto-gost.sign/save-key-pair key-pair "gost-keypair" "MyPassword12")
         key-pair2 (crypto-gost.sign/load-key-pair "gost-keypair" "MyPassword12")]
@@ -68,6 +70,64 @@ To generate private and public keypair for GOST3410-2001 use crypto-gost.sign/ge
 ```
 
 ### Encryption
+
+This library provides GOST 28147-89 CFB encryption mode only which is most secured mode.
+Here is example for encrypt/decrypt operations.
+
+```clojure
+
+  ;; define plain text
+  (def m3 "Suppose the original message has length = 50 bytes")
+
+  ;; generate secert key from password
+  (def k (crypto-gost.encrypt/gen-secret-key-from-pwd "MyPassword12"))
+
+  ;; this fn generates random iv 
+  ;; iv must be random during every encryption of plain text
+  ;; encrypted iv should be passed with encrypted text
+  (defn gen-iv
+    "generate random iv for GOST 28147-89"
+    []
+    (let [iv-array (byte-array 8)]
+      (.nextBytes (SecureRandom.) iv-array)
+      iv-array))
+
+  (crypto-gost.common/bytes-to-hex (gen-iv))
+  ;; => "933c5e712fa250b6"
+
+  ;; for this example define iv as constant.
+  ;; never do it in prod. iv must be random 
+  ;; convert hex to bytes array
+  (def iv (crypto-gost.common/hex-to-bytes "933c5e712fa250b6"))
+
+  ;;encrypt and decrypt data
+  (let [plain-text (.getBytes m3)
+        enc-data (crypto-gost.encrypt/encrypt-cfb k iv plain-text)
+        dec-data (crypto-gost.encrypt/decrypt-cfb k iv enc-data)]
+    (= m3 (String. dec-data)))
+    
+```
+Also you can encrypt/decrypt streaming input and output (File, Socket, URL etc.)
+
+```clojure
+;; suppose m3.txt file has a message m3
+(let [plain-file "m3.txt"
+        enc-file "m3.enc"
+        dec-file "m3.dec"]
+    (crypto-gost.encrypt/encrypt-stream-cfb k iv plain-file enc-file)
+    (crypto-gost.encrypt/decrypt-stream-cfb k iv enc-file dec-file)
+    (= (slurp plain-file) (slurp dec-file)))
+```
+GOST has mac defense against encrypted text modification. Mac is calculated for plain text.
+Just send encrypted mac 4 bytes vector with encrypted text and verify mac with decrypted plain text.
+If macs are not the same then encrypted text was tampered.
+Here is example of mac generation:
+
+```clojure
+(let [plain-text (.getBytes m3)
+      mac (crypto-gost.encrypt/mac-gen k plain-text)]
+    mac)
+```
 
 
 ### Digest/HMAC
