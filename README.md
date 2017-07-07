@@ -33,6 +33,8 @@ Add necessary namespaces to ns form:
 (:import java.security.SecureRandom)
 ```
 
+Not all fn's are demonstrated in following examples. Look inside code to get more info. 
+
 ### Key generation
 
 To generate secret key for GOST 28147-89 using Java SecureRandom use crypto-gost.encrypt/gen-secret-key.
@@ -107,6 +109,7 @@ Here is example for encrypt/decrypt operations.
     (= m3 (String. dec-data)))
     
 ```
+
 Also you can encrypt/decrypt streaming input and output (File, Socket, URL etc.)
 
 ```clojure
@@ -118,6 +121,7 @@ Also you can encrypt/decrypt streaming input and output (File, Socket, URL etc.)
     (crypto-gost.encrypt/decrypt-stream-cfb k iv enc-file dec-file)
     (= (slurp plain-file) (slurp dec-file)))
 ```
+
 GOST has mac defense against encrypted text modification. Mac is calculated for plain text.
 Just send encrypted mac 4 bytes vector with encrypted text and verify mac with decrypted plain text.
 If macs are not the same then encrypted text was tampered.
@@ -132,10 +136,54 @@ Here is example of mac generation:
 
 ### Digest/HMAC
 
+Now GOST has 3 message digest algorithms: 3411-94, 3411-2012 256 bit, 3411-2012 512 bit.
+All of them are available. Here is example how to generate hash (message digest) from message.
+While crypto-gost.digest/digest-str accepts ^String data and return ^String digest,
+crypto-gost.digest/digest works with binary data. 
 
+```clojure
+(let [d1 (crypto-gost.digest/digest-str :3411-94 m3)
+      d2 (crypto-gost.digest/digest-str :3411-2012-256 m3)
+      d3 (crypto-gost.digest/digest-str :3411-2012-512 m3)]
+    [d1 d2 d3])
+  ;;  ["c3730c5cbccacf915ac292676f21e8bd4ef75331d9405e5f1a61dc3130a65011"
+  ;;   "a3ed85322e1a1479b605a752b1d487fd138863aa1ea67a91e157aa53fce796f3"
+  ;;   "275557a47dcfcb8235ff029b74837f0441efe41aed12c207313e83b27abd1e6a9d892713bc30a16bf947d46a59bbbb3a33ee33385391c73675e7d0c360213540"]
+```
+
+Also, you can protect data with HMAC which is use seed during digest generation. 
+So, if you don't know seed you'll never got correct HMAC value.
+Here is example of using HMAC. 
+
+```clojure
+  (def hmac-seed "012346789abcdef")
+  (let [hmac-hex (crypto-gost.digest/hmac-str :3411-94 m3 hmac-seed)]
+    hmac-hex)
+  ;; => "3a05abb54a68dc8d22bb4b7d19999ebc10f2fbbcfe0167ceb0ba8fbb80e0250f"
+```
 
 ### Sign/Verify
 
+This library supports only GOST3410-2001 Elliptic curve Russian signature algorithm with sign of 512 bits length, 
+which is still secure for 20-30 years.
+Here is example of sign generation and verification.
+
+```clojure
+(let [kp (crypto-gost.sign/gen-keypair)
+        filename "keys-3410"
+        pwd "pwd123"
+        _ (crypto-gost.sign/save-key-pair kp filename pwd)
+        kp2 (crypto-gost.sign/load-key-pair filename pwd)
+        hash (crypto-gost.digest/digest :3411-94 (.getBytes m3))
+        sign (crypto-gost.sign/sign hash (.getPrivate kp))
+        v1 (crypto-gost.sign/verify hash (.getPublic kp) sign)
+        v2 (crypto-gost.sign/verify hash (.getPublic kp2) sign)
+        sign2 (crypto-gost.sign/sign hash (.getPrivate kp2))
+        v3 (crypto-gost.sign/verify hash (.getPublic kp) sign2)]
+    (assert (= true v1))
+    (assert (= true v2))
+    (assert (= true v3)))
+```
 
 
 ## License
