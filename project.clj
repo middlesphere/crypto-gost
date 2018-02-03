@@ -1,10 +1,10 @@
-(defproject crypto-gost "0.1"
+(defproject crypto-gost "0.2"
   :description "Clojure Bouncycastle wrapper to work with GOST"
   :url "https://github.com/middlesphere/crypto-gost"
-  :author "Mikhail Ananev"
+  :author "Mike Ananev"
   :license {:name "Eclipse Public License"
-            :url "http://www.eclipse.org/legal/epl-v10.html"}
+            :url  "http://www.eclipse.org/legal/epl-v10.html"}
   
-  :dependencies [[org.clojure/clojure "1.8.0"]]
-  :profiles {:dev      {:dependencies [[org.bouncycastle/bcprov-jdk15on "1.57"]]}
-             :provided {:dependencies [[org.bouncycastle/bcprov-jdk15on "1.57"]]}})
+  :dependencies [[org.clojure/clojure "1.9.0"]]
+  :profiles {:dev      {:dependencies [[org.bouncycastle/bcprov-jdk15on "1.59"]]}
+             :provided {:dependencies [[org.bouncycastle/bcprov-jdk15on "1.59"]]}})

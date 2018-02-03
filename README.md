@@ -4,7 +4,7 @@ A thin Clojure warpper for Bouncycastle library (https://bouncycastle.org) to wo
 
 
 This library provides functions to work with: 
-* encryption, mac (imito) using GOST 28147-89,
+* encryption, mac (imito) using GOST 28147-89, GOST 3412-2015
 * digest, hmac  using GOST3411-94/2012 256 and 512 bits, 
 * signature with GOST3410-2001
 * key generation: secret, public/private, password based
@@ -15,8 +15,8 @@ This library provides functions to work with:
 Add dependencies to your project:
 
 ```clojure
-:dependencies [[org.bouncycastle/bcprov-jdk15on "1.57"]
-               [crypto-gost "0.1"]]
+:dependencies [[org.bouncycastle/bcprov-jdk15on "1.59"]
+               [crypto-gost "0.2"]]
 ```
 
 Note: if you use Oracle JDK then  Bouncycastle jar should be in class path as separate library, not in uberjar, cause its content is signed.
@@ -73,8 +73,8 @@ To generate private and public keypair for GOST3410-2001 use crypto-gost.sign/ge
 
 ### Encryption
 
-This library provides GOST 28147-89 CFB encryption mode only which is most secured mode.
-Here is example for encrypt/decrypt operations.
+This library provides GOST 28147-89 & GOST 3412-2015 CFB encryption mode.
+Here is example for GOST 28147-89 encrypt/decrypt operations.
 
 ```clojure
 
@@ -110,6 +110,21 @@ Here is example for encrypt/decrypt operations.
     
 ```
 
+Here some examples for GOST 3412-2015.
+
+```clojure
+
+(def k-3412 (crypto-gost.common/hex-to-bytes "8899aabbccddeeff0011223344556677fedcba98765432100123456789abcdef")) ;;32 bytes
+(def iv-3412 (crypto-gost.common/hex-to-bytes "00112233445566778899aabbccddeeff")) ;; 16 bytes
+
+(def m4 "1122334455667700ffeeddccbbaa9988")
+
+(let [plain-text (crypto-gost.common/hex-to-bytes m4)
+        enc-data   (crypto-gost.encrypt/encrypt-3412-cfb k-3412 iv-3412 plain-text)
+        dec-data   (crypto-gost.encrypt/decrypt-3412-cfb k-3412 iv-3412 enc-data)]
+    (is (= m4 (crypto-gost.common/bytes-to-hex dec-data))))
+```
+
 Also you can encrypt/decrypt streaming input and output (File, Socket, URL etc.)
 
 ```clojure
@@ -128,11 +143,17 @@ If macs are not the same then encrypted text was tampered.
 Here is example of mac generation:
 
 ```clojure
+
 (let [plain-text (.getBytes m3)
       mac (crypto-gost.encrypt/mac-gen k plain-text)]
     mac)
+
+(let [plain-text (crypto-gost.common/hex-to-bytes m4)
+        mac        ((crypto-gost.encrypt/mac-3412-gen k-3412 plain-text)]
+    (is (= "51aa8ebefe937200c21e2518bd4a2edb" ((crypto-gost.common/bytes-to-hex mac))))
 ```
 
+GOST 3412-2015 produces mac 16 bytes length.
 
 ### Digest/HMAC
 
