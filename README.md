@@ -6,7 +6,7 @@ A thin Clojure warpper for Bouncycastle library (https://bouncycastle.org) to wo
 This library provides functions to work with: 
 * encryption, mac (imito) using GOST 28147-89, GOST 3412-2015
 * digest, hmac  using GOST3411-94/2012 256 and 512 bits, 
-* signature with GOST3410-2001
+* signature with GOST3410-2001, GOST3410-2012
 * key generation: secret, public/private, password based
 
 
@@ -16,7 +16,7 @@ Add dependencies to your project:
 
 ```clojure
 :dependencies [[org.bouncycastle/bcprov-jdk15on "1.59"]
-               [crypto-gost "0.2"]]
+               [crypto-gost "0.2.1"]]
 ```
 
 Note: if you use Oracle JDK then  Bouncycastle jar should be in class path as separate library, not in uberjar, cause its content is signed.
@@ -185,8 +185,7 @@ Here is example of using HMAC.
 
 ### Sign/Verify
 
-This library supports only GOST3410-2001 Elliptic curve Russian signature algorithm with sign of 512 bits length, 
-which is still secure for 20-30 years.
+This library supports GOST3410-2001. GOST3410-2012 Elliptic curve Russian signature algorithm with sign of 512 bits length.
 Here is example of sign generation and verification.
 
 ```clojure
@@ -204,6 +203,12 @@ Here is example of sign generation and verification.
     (assert (= true v1))
     (assert (= true v2))
     (assert (= true v3)))
+    
+(let [kp   (crypto-gost.sign/gen-keypair-2012) ;;default private key 512 bits length
+        hash (crypto-gost.digest/digest :3411-2012-512 (.getBytes m3))
+        sign (crypto-gost.sign/sign-2012 hash (.getPrivate kp))
+        v1   (crypto-gost.sign/verify-2012 hash (.getPublic kp) sign)]
+    (is (= true v1)))
 ```
 
 

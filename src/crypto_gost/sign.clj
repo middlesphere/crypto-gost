@@ -4,9 +4,29 @@
             crypto-gost.encrypt)
   (:import [java.security KeyFactory KeyPairGenerator PrivateKey PublicKey SecureRandom Security Signature KeyPair]
            [java.security.spec EncodedKeySpec PKCS8EncodedKeySpec X509EncodedKeySpec]
+           [org.bouncycastle.crypto.signers ECGOST3410_2012Signer]
+           [org.bouncycastle.jcajce.provider.asymmetric.util ECUtil]
+           [org.bouncycastle.crypto.params ParametersWithRandom]
            org.bouncycastle.jce.ECGOST3410NamedCurveTable
            org.bouncycastle.jce.provider.BouncyCastleProvider
            org.bouncycastle.jce.spec.ECNamedCurveParameterSpec))
+
+
+(defn gen-keypair-2012
+  "Generate GOST3410-2012 keypair using Tc26-Gost-3410-12-512-paramSetA params by default.
+  Availbable params: Tc26-Gost-3410-12-256-paramSetA, Tc26-Gost-3410-12-512-paramSetA, Tc26-Gost-3410-12-512-paramSetA,
+  Tc26-Gost-3410-12-512-paramSetB, Tc26-Gost-3410-12-512-paramSetC  
+  return ^KeyPair object."
+  ([] (gen-keypair-2012 "Tc26-Gost-3410-12-512-paramSetA"))
+  ([^String ec-params]
+   (Security/addProvider (BouncyCastleProvider.))
+   (let [^ECNamedCurveParameterSpec named-curve-param-spec (ECGOST3410NamedCurveTable/getParameterSpec ec-params) 
+         ^KeyPairGenerator keypair-generator               (KeyPairGenerator/getInstance "ECGOST3410-2012" "BC")
+         rand-engine                                       (SecureRandom.)
+         _                                                 (.initialize keypair-generator named-curve-param-spec rand-engine)
+         keypair                                           (.generateKeyPair keypair-generator)]
+     keypair)))
+
 
 (defn gen-keypair
   "Generate GOST3410-2001 keypair using CryptoPro-A params by default.
@@ -17,12 +37,28 @@
   ([^String ec-params]
    (Security/addProvider (BouncyCastleProvider.))
    (let [^ECNamedCurveParameterSpec named-curve-param-spec (ECGOST3410NamedCurveTable/getParameterSpec ec-params) 
-         ^KeyPairGenerator keypair-generator (KeyPairGenerator/getInstance "ECGOST3410" "BC")
-         rand-engine (SecureRandom.)
-         _ (.initialize keypair-generator named-curve-param-spec rand-engine)
-         keypair (.generateKeyPair keypair-generator)]
+         ^KeyPairGenerator keypair-generator               (KeyPairGenerator/getInstance "ECGOST3410" "BC")
+         rand-engine                                       (SecureRandom.)
+         _                                                 (.initialize keypair-generator named-curve-param-spec rand-engine)
+         keypair                                           (.generateKeyPair keypair-generator)]
      keypair)))
 
+
+
+(defn sign-2012
+  "generate signature GOST 3410-2012 from a given hash using given private key.
+  return byte[64] or byte[128] array of signature depending on private key length."
+  [hash-bytes ^PrivateKey private-key]
+  (Security/addProvider (BouncyCastleProvider.))
+  (let [key-length        (.bitLength (.getN (.getParameters private-key)))
+        sign-engine       (if (= 512 key-length)
+                            (Signature/getInstance "ECGOST3410-2012-512")
+                            (Signature/getInstance "ECGOST3410-2012-256"))
+        rand-engine       (SecureRandom.)
+        _                 (.initSign sign-engine private-key rand-engine)
+        _                 (.update sign-engine hash-bytes 0 (alength hash-bytes))
+        sign-result-bytes (.sign sign-engine)]
+    sign-result-bytes))
 
 
 (defn sign
@@ -30,13 +66,27 @@
   return byte[64] array of signature"
   [hash-bytes ^PrivateKey private-key]
   (Security/addProvider (BouncyCastleProvider.))
-  (let [sign-engine (Signature/getInstance "GOST3411withECGOST3410")
-        rand-engine (SecureRandom.)
-        _ (.initSign sign-engine private-key rand-engine)
-        _ (.update sign-engine hash-bytes 0 (alength hash-bytes))
+  (let [sign-engine       (Signature/getInstance "GOST3411withECGOST3410")
+        rand-engine       (SecureRandom.)
+        _                 (.initSign sign-engine private-key rand-engine)
+        _                 (.update sign-engine hash-bytes 0 (alength hash-bytes))
         sign-result-bytes (.sign sign-engine)]
     sign-result-bytes))
 
+
+(defn verify-2012
+  "verify (bytes array) sign-bytes of GOST 3410-2012 signature using given hash value (bytes array) and public key.
+  return: true - signature is correct, false - signature is not correct."
+  [hash-bytes ^PublicKey public-key sign-bytes]
+  (Security/addProvider (BouncyCastleProvider.))
+  (let [key-length  (.bitLength (.getN (.getParameters public-key)))
+        sign-engine (if (= 512 key-length)
+                      (Signature/getInstance "ECGOST3410-2012-512")
+                      (Signature/getInstance "ECGOST3410-2012-256"))
+        _           (.initVerify sign-engine public-key)
+        _           (.update sign-engine hash-bytes 0 (alength hash-bytes))
+        result      (.verify sign-engine sign-bytes)]
+    result))
 
 
 (defn verify
@@ -45,9 +95,9 @@
   [hash-bytes ^PublicKey public-key sign-bytes]
   (Security/addProvider (BouncyCastleProvider.))
   (let [sign-engine (Signature/getInstance "GOST3411withECGOST3410")
-        _ (.initVerify sign-engine public-key)
-        _ (.update sign-engine hash-bytes 0 (alength hash-bytes))
-        result (.verify sign-engine sign-bytes)]
+        _           (.initVerify sign-engine public-key)
+        _           (.update sign-engine hash-bytes 0 (alength hash-bytes))
+        result      (.verify sign-engine sign-bytes)]
     result))
 
 
