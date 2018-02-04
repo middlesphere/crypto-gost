@@ -139,13 +139,29 @@
    ^String filename
    ^String password]
   (let [public-key-bytes (.getEncoded public-key)
-        public-hex (common/bytes-to-hex public-key-bytes)
-        hmac (crypto-gost.digest/hmac :3411-94 public-key-bytes password)
-        hmac-hex (common/bytes-to-hex hmac)
-        file-content (str {:public-key public-hex :hmac hmac-hex})]
+        public-hex       (common/bytes-to-hex public-key-bytes)
+        hmac             (crypto-gost.digest/hmac :3411-94 public-key-bytes password)
+        hmac-hex         (common/bytes-to-hex hmac)
+        file-content     (str {:public-key public-hex :hmac hmac-hex})]
     (spit filename file-content)))
 
 
+(defn load-private-key-2012
+  "load a private key GOST 3410-2012 from file
+  private key HMAC will be verified.
+  return ^PrivateKey object if success or nil if key is tampered."
+  [^String filename
+   ^String password]
+  (let [key-struct      (clojure.edn/read-string (slurp filename))
+        secret-key      (crypto-gost.encrypt/gen-secret-key-from-pwd password)
+        enc-private-key (common/hex-to-bytes (:private-key key-struct))
+        new-hmac-hex    (common/bytes-to-hex (crypto-gost.digest/hmac :3411-94 enc-private-key password))]
+    (when (= new-hmac-hex (:hmac key-struct))
+      (let [decrypted-private-key            (crypto-gost.encrypt/decrypt-cfb secret-key (.getBytes "a123456b") enc-private-key)
+            ^EncodedKeySpec private-key-spec (PKCS8EncodedKeySpec. decrypted-private-key)
+            ^KeyFactory factory              (KeyFactory/getInstance "ECGOST3410-2012" "BC")
+            ^PrivateKey private-key          (.generatePrivate factory private-key-spec)]
+        private-key))))
 
 (defn load-private-key
   "load a private key GOST 3410-2001 from file
@@ -153,18 +169,32 @@
   return ^PrivateKey object if success or nil if key is tampered."
   [^String filename
    ^String password]
-  (let [key-struct (clojure.edn/read-string (slurp filename))
-        secret-key (crypto-gost.encrypt/gen-secret-key-from-pwd password)
+  (let [key-struct      (clojure.edn/read-string (slurp filename))
+        secret-key      (crypto-gost.encrypt/gen-secret-key-from-pwd password)
         enc-private-key (common/hex-to-bytes (:private-key key-struct))
-        new-hmac-hex (common/bytes-to-hex (crypto-gost.digest/hmac :3411-94 enc-private-key password))]
+        new-hmac-hex    (common/bytes-to-hex (crypto-gost.digest/hmac :3411-94 enc-private-key password))]
     (when (= new-hmac-hex (:hmac key-struct))
-      (let [decrypted-private-key (crypto-gost.encrypt/decrypt-cfb secret-key (.getBytes "a123456b") enc-private-key)
+      (let [decrypted-private-key            (crypto-gost.encrypt/decrypt-cfb secret-key (.getBytes "a123456b") enc-private-key)
             ^EncodedKeySpec private-key-spec (PKCS8EncodedKeySpec. decrypted-private-key)
-            ^KeyFactory factory (KeyFactory/getInstance "ECGOST3410" "BC")
-            ^PrivateKey private-key (.generatePrivate factory private-key-spec)]
+            ^KeyFactory factory              (KeyFactory/getInstance "ECGOST3410" "BC")
+            ^PrivateKey private-key          (.generatePrivate factory private-key-spec)]
         private-key))))
 
 
+(defn load-public-key-2012
+  "load a public key GOST 3410-2012 from file
+  public key HMAC will be verified.
+  return ^PublicKey object if success or nil if key is tampered."
+  [^String filename
+   ^String password]
+  (let [key-struct   (clojure.edn/read-string (slurp filename))
+        public-key   (common/hex-to-bytes (:public-key key-struct))
+        new-hmac-hex (common/bytes-to-hex (crypto-gost.digest/hmac :3411-94 public-key password))]
+    (when (= new-hmac-hex (:hmac key-struct))
+      (let [^EncodedKeySpec public-key-spec (X509EncodedKeySpec. public-key)
+            ^KeyFactory factory             (KeyFactory/getInstance "ECGOST3410-2012" "BC")
+            ^PublicKey public-key           (.generatePublic factory public-key-spec)]
+        public-key))))
 
 (defn load-public-key
   "load a public key GOST 3410-2001 from file
@@ -172,13 +202,13 @@
   return ^PublicKey object if success or nil if key is tampered."
   [^String filename
    ^String password]
-  (let [key-struct (clojure.edn/read-string (slurp filename))
-        public-key (common/hex-to-bytes (:public-key key-struct))
+  (let [key-struct   (clojure.edn/read-string (slurp filename))
+        public-key   (common/hex-to-bytes (:public-key key-struct))
         new-hmac-hex (common/bytes-to-hex (crypto-gost.digest/hmac :3411-94 public-key password))]
     (when (= new-hmac-hex (:hmac key-struct))
       (let [^EncodedKeySpec public-key-spec (X509EncodedKeySpec. public-key)
-            ^KeyFactory factory (KeyFactory/getInstance "ECGOST3410" "BC")
-            ^PublicKey public-key (.generatePublic factory public-key-spec)]
+            ^KeyFactory factory             (KeyFactory/getInstance "ECGOST3410" "BC")
+            ^PublicKey public-key           (.generatePublic factory public-key-spec)]
         public-key))))
 
 
@@ -192,6 +222,14 @@
   (save-public-key (.getPublic kp) (str filename ".pub") password))
 
 
+(defn load-key-pair-2012
+  "load ^KeyPair object from files. Extensions .priv and .pub will be automatically added to filename to load keys from separate files.
+  HMAC for all keys will be verified. Private key will be decrypted.
+  return ^KeyPair object or nil if errors."
+  [^String filename ^String password]
+  (let [private-key (load-private-key-2012 (str filename ".priv") password)
+        public-key  (load-public-key-2012 (str filename ".pub") password)]
+    (KeyPair. public-key private-key)))
 
 (defn load-key-pair
   "load ^KeyPair object from files. Extensions .priv and .pub will be automatically added to filename to load keys from separate files.

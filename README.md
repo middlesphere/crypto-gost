@@ -16,7 +16,7 @@ Add dependencies to your project:
 
 ```clojure
 :dependencies [[org.bouncycastle/bcprov-jdk15on "1.59"]
-               [crypto-gost "0.2.1"]]
+               [crypto-gost "0.2.2"]]
 ```
 
 Note: if you use Oracle JDK then  Bouncycastle jar should be in class path as separate library, not in uberjar, cause its content is signed.
@@ -60,7 +60,7 @@ gen-secret-key-from-pwd returns 32 bytes length secret key.
 ```
 Note: calling gen-secret-key-from-pwd with same password always returns same secret key value.
 
-To generate private and public keypair for GOST3410-2001 use crypto-gost.sign/gen-keypair.
+ To generate private and public keypair for GOST3410-2001 use crypto-gost.sign/gen-keypair.
 
 ```clojure
  ;;generate GOST 3410-2001 KeyPair, save it to a files "gost-keypair.priv" / "gost-keypair.pub"
@@ -68,7 +68,18 @@ To generate private and public keypair for GOST3410-2001 use crypto-gost.sign/ge
   (let [key-pair (crypto-gost.sign/gen-keypair)
         _ (crypto-gost.sign/save-key-pair key-pair "gost-keypair" "MyPassword12")
         key-pair2 (crypto-gost.sign/load-key-pair "gost-keypair" "MyPassword12")]
-    )
+    key-pair2)
+```
+
+To generate private and public keypair for GOST3410-2012 use crypto-gost.sign/gen-keypair-2012.
+
+```clojure
+ ;;generate GOST 3410-2012 KeyPair, save it to a files "gost-keypair.priv" / "gost-keypair.pub"
+ ;;and then load it from files.
+(let [key-pair  (crypto-gost.sign/gen-keypair-2012)
+      _         (crypto-gost.sign/save-key-pair key-pair "gost-keypair" "MyPassword12")
+      key-pair2 (crypto-gost.sign/load-key-pair-2012 "gost-keypair" "MyPassword12")]
+  key-pair2) 
 ```
 
 ### Encryption
@@ -122,7 +133,7 @@ Here some examples for GOST 3412-2015.
 (let [plain-text (crypto-gost.common/hex-to-bytes m4)
         enc-data   (crypto-gost.encrypt/encrypt-3412-cfb k-3412 iv-3412 plain-text)
         dec-data   (crypto-gost.encrypt/decrypt-3412-cfb k-3412 iv-3412 enc-data)]
-    (is (= m4 (crypto-gost.common/bytes-to-hex dec-data))))
+    (assert (= m4 (crypto-gost.common/bytes-to-hex dec-data))))
 ```
 
 Also you can encrypt/decrypt streaming input and output (File, Socket, URL etc.)
@@ -150,7 +161,7 @@ Here is example of mac generation:
 
 (let [plain-text (crypto-gost.common/hex-to-bytes m4)
         mac        ((crypto-gost.encrypt/mac-3412-gen k-3412 plain-text)]
-    (is (= "51aa8ebefe937200c21e2518bd4a2edb" ((crypto-gost.common/bytes-to-hex mac))))
+    (assert (= "51aa8ebefe937200c21e2518bd4a2edb" ((crypto-gost.common/bytes-to-hex mac))))
 ```
 
 GOST 3412-2015 produces mac 16 bytes length.
@@ -204,17 +215,36 @@ Here is example of sign generation and verification.
     (assert (= true v2))
     (assert (= true v3)))
     
+;; sign and verify with GOST3410-2012
+
 (let [kp   (crypto-gost.sign/gen-keypair-2012) ;;default private key 512 bits length
         hash (crypto-gost.digest/digest :3411-2012-512 (.getBytes m3))
         sign (crypto-gost.sign/sign-2012 hash (.getPrivate kp))
         v1   (crypto-gost.sign/verify-2012 hash (.getPublic kp) sign)]
-    (is (= true v1)))
+    (assert (= true v1)))
+
+;; generate, save, load, sign with GOST3410-2012
+
+(let [kp       (sut/gen-keypair-2012)
+        filename "keys-3410-2012"
+        pwd      "pwd123"
+        _        (sut/save-key-pair kp filename pwd)
+        kp2      (sut/load-key-pair-2012 filename pwd)
+        hash     (crypto-gost.digest/digest :3411-2012-512 (.getBytes m3))
+        sign     (sut/sign-2012 hash (.getPrivate kp))
+        v1       (sut/verify-2012 hash (.getPublic kp) sign)
+        v2       (sut/verify-2012 hash (.getPublic kp2) sign)
+        sign2    (sut/sign-2012 hash (.getPrivate kp2))
+        v3       (sut/verify-2012 hash (.getPublic kp) sign2)]
+    (assert (= true v1))
+    (assert (= true v2))
+    (assert (= true v3)))
 ```
 
 
 ## License
 
-Copyright © 2017 Mike Ananev
+Copyright © 2017-2018 Mike Ananev
 
 Distributed under the Eclipse Public License either version 1.0 or (at
 your option) any later version.

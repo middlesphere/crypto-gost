@@ -1,4 +1,4 @@
-(defproject crypto-gost "0.2.1"
+(defproject crypto-gost "0.2.2"
   :description "Clojure Bouncycastle wrapper to work with GOST"
   :url "https://github.com/middlesphere/crypto-gost"
   :author "Mike Ananev"
