@@ -17,7 +17,7 @@
   "encrypt plain-data as bytes array in CFB mode using given key (32 bytes array) and iv (16 bytes array).
   Encryption algorithm is GOST 3412-2015.
   return encrypted text as bytes array."
-  [k iv plain-data]
+  [k iv ^bytes plain-data]
   (Security/addProvider (BouncyCastleProvider.))
   (let [enc-key (SecretKeySpec. k "GOST3412-2015")
         cipher  (Cipher/getInstance "GOST3412-2015/CFB8/NoPadding" "BC")
@@ -33,7 +33,7 @@
   "decrypt encrypted-data as bytes array in CFB mode using given key (32 bytes array) and iv (16 bytes array).
   Decryption algorithm is GOST 3412-2015.
   return decrypted plain text as bytes array."
-  [k iv encrypted-data]
+  [k iv ^bytes encrypted-data]
   (Security/addProvider (BouncyCastleProvider.))
   (let [dec-key              (SecretKeySpec. k "GOST3412-2015")
         cipher               (Cipher/getInstance "GOST3412-2015/CFB8/NoPadding" "BC")
@@ -51,7 +51,7 @@
   "encrypt plain-data as bytes array in CFB mode using given key (32 bytes array) and iv (8 bytes array).
   Encryption algorithm is GOST 28147-89.
   return encrypted text as bytes array."
-  [k iv plain-data]
+  [k iv ^bytes plain-data]
   (Security/addProvider (BouncyCastleProvider.))
   (let [enc-key (SecretKeySpec. k "GOST28147")
         cipher  (Cipher/getInstance "GOST28147/CFB8/NoPadding" "BC")
@@ -67,7 +67,7 @@
   "decrypt encrypted-data as bytes array in CFB mode using given key (32 bytes array) and iv (8 bytes array).
   Decryption algorithm is GOST 28147-89.
   return decrypted plain text as bytes array."
-  [k iv encrypted-data]
+  [k iv ^bytes encrypted-data]
   (Security/addProvider (BouncyCastleProvider.))
   (let [dec-key              (SecretKeySpec. k "GOST28147")
         cipher               (Cipher/getInstance "GOST28147/CFB8/NoPadding" "BC")
@@ -195,7 +195,7 @@
   Decryption algorithm is GOST 28147-89.
   return plain text as String."
   [k iv ^String enc-text-hex]
-  (let [d (decrypt-cfb k iv (common/hex-to-bytes enc-text-hex))]
+  (let [d ^bytes (decrypt-cfb k iv (common/hex-to-bytes enc-text-hex))]
     (String. d)))
 
 
@@ -214,7 +214,7 @@
   Decryption algorithm is GOST 3412-2015.
   return plain text as String."
   [k iv ^String enc-text-hex]
-  (let [d (decrypt-3412-cfb k iv (common/hex-to-bytes enc-text-hex))]
+  (let [d ^bytes (decrypt-3412-cfb k iv (common/hex-to-bytes enc-text-hex))]
     (String. d)))
 
 
@@ -222,7 +222,7 @@
 (defn mac-gen
   "generate MAC GOST 28147-89 for plain-data (bytes array) using given key (32 bytes array)
   return 4 bytes array with MAC."
-  [k plain-data]
+  [k ^bytes plain-data]
   (Security/addProvider (BouncyCastleProvider.))
   (let [mac     (Mac/getInstance "GOST28147MAC" "BC")
         key     (SecretKeySpec. k "GOST28147")
@@ -236,7 +236,7 @@
 (defn mac-3412-gen
   "generate MAC GOST 3412-2015 for plain-data (bytes array) using given key (32 bytes array)
   return 16 bytes array with MAC."
-  [k plain-data]
+  [k ^bytes plain-data]
   (Security/addProvider (BouncyCastleProvider.))
   (let [mac     (Mac/getInstance "GOST3412MAC" "BC")
         key     (SecretKeySpec. k "GOST3412-2015")

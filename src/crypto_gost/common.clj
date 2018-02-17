@@ -20,7 +20,7 @@
 
 (defn hex-to-bytes
   "convert hex String to bytes array"
-  [s]
+  [^String s]
   (Hex/decode s))
 
 

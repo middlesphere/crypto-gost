@@ -6,14 +6,15 @@
            [org.bouncycastle.crypto.digests GOST3411_2012_256Digest GOST3411_2012_512Digest GOST3411Digest]
            org.bouncycastle.crypto.generators.PKCS5S1ParametersGenerator
            org.bouncycastle.crypto.macs.HMac
+           [org.bouncycastle.crypto Digest]
            org.bouncycastle.crypto.params.KeyParameter
            org.bouncycastle.jce.provider.BouncyCastleProvider))
 
 (defn- digest-class
   "return initilized GOST digest class based on given algo-type"
-  [algo-type]
+  ^Digest [algo-type]
   (case algo-type
-    :3411-94 (GOST3411Digest.)
+    :3411-94       (GOST3411Digest.)
     :3411-2012-256 (GOST3411_2012_256Digest.)
     :3411-2012-512 (GOST3411_2012_512Digest.)
     (GOST3411_2012_256Digest.)))
@@ -22,19 +23,19 @@
 (defn digest
   "calculate GOST digest from given byte array.
   return digest as bytes array"
-  [algo-type bytes-data]
+  [algo-type ^bytes bytes-data]
   (Security/addProvider (BouncyCastleProvider.))
-  (let [digest (digest-class algo-type)
-        _ (.update digest bytes-data 0 (alength bytes-data))
+  (let [digest        (digest-class algo-type)
+        _             (.update digest bytes-data 0 (alength bytes-data))
         digest-buffer (byte-array (.getDigestSize digest))
-        _ (.doFinal digest digest-buffer 0)]
+        _             (.doFinal digest digest-buffer 0)]
     digest-buffer))
 
 
 (defn digest-str
   "calculate GOST digest from string.
   return digest as hex String"
-  [algo-type s]
+  [algo-type ^String s]
   (common/bytes-to-hex (digest algo-type (.getBytes s))))
 
 
@@ -57,14 +58,14 @@
 (defn hmac
   "calculate GOST hmac from given byte array.
   return hmac as bytes array"
-  [algo-type bytes-data ^String seed]
+  [algo-type ^bytes bytes-data ^String seed]
   (Security/addProvider (BouncyCastleProvider.))
-  (let [hmac-fn (HMac. (digest-class algo-type))
-        key-param (KeyParameter. (PKCS5S1ParametersGenerator/PKCS5PasswordToUTF8Bytes (.toCharArray seed)))
-        _ (.init hmac-fn key-param)
-        _ (.update hmac-fn bytes-data 0 (alength bytes-data))
+  (let [hmac-fn         (HMac. (digest-class algo-type))
+        key-param       (KeyParameter. (PKCS5S1ParametersGenerator/PKCS5PasswordToUTF8Bytes (.toCharArray seed)))
+        _               (.init hmac-fn key-param)
+        _               (.update hmac-fn bytes-data 0 (alength bytes-data))
         hmac-byte-array (byte-array (.getMacSize hmac-fn))
-        _ (.doFinal hmac-fn hmac-byte-array 0)]
+        _               (.doFinal hmac-fn hmac-byte-array 0)]
     hmac-byte-array))
 
 

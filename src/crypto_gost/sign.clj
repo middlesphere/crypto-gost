@@ -7,6 +7,7 @@
            [org.bouncycastle.crypto.signers ECGOST3410_2012Signer]
            [org.bouncycastle.jcajce.provider.asymmetric.util ECUtil]
            [org.bouncycastle.crypto.params ParametersWithRandom]
+           [org.bouncycastle.jce.interfaces ECPrivateKey ECPublicKey]
            org.bouncycastle.jce.ECGOST3410NamedCurveTable
            org.bouncycastle.jce.provider.BouncyCastleProvider
            org.bouncycastle.jce.spec.ECNamedCurveParameterSpec))
@@ -48,7 +49,7 @@
 (defn sign-2012
   "generate signature GOST 3410-2012 from a given hash using given private key.
   return byte[64] or byte[128] array of signature depending on private key length."
-  [hash-bytes ^PrivateKey private-key]
+  [^bytes hash-bytes ^ECPrivateKey private-key]
   (Security/addProvider (BouncyCastleProvider.))
   (let [key-length        (.bitLength (.getN (.getParameters private-key)))
         sign-engine       (if (= 512 key-length)
@@ -64,7 +65,7 @@
 (defn sign
   "generate signature GOST 3410-2001 from a given hash using given private key.
   return byte[64] array of signature"
-  [hash-bytes ^PrivateKey private-key]
+  [^bytes hash-bytes ^PrivateKey private-key]
   (Security/addProvider (BouncyCastleProvider.))
   (let [sign-engine       (Signature/getInstance "GOST3411withECGOST3410")
         rand-engine       (SecureRandom.)
@@ -77,7 +78,7 @@
 (defn verify-2012
   "verify (bytes array) sign-bytes of GOST 3410-2012 signature using given hash value (bytes array) and public key.
   return: true - signature is correct, false - signature is not correct."
-  [hash-bytes ^PublicKey public-key sign-bytes]
+  [^bytes hash-bytes ^ECPublicKey public-key sign-bytes]
   (Security/addProvider (BouncyCastleProvider.))
   (let [key-length  (.bitLength (.getN (.getParameters public-key)))
         sign-engine (if (= 512 key-length)
@@ -92,7 +93,7 @@
 (defn verify
   "verify (bytes array) sign-bytes of GOST 3410-2001 signature using given hash value (bytes array) and public key.
   return: true - signature is correct, false - signature is not correct."
-  [hash-bytes ^PublicKey public-key sign-bytes]
+  [^bytes hash-bytes ^PublicKey public-key sign-bytes]
   (Security/addProvider (BouncyCastleProvider.))
   (let [sign-engine (Signature/getInstance "GOST3411withECGOST3410")
         _           (.initVerify sign-engine public-key)
