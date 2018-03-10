@@ -16,7 +16,7 @@ Add dependencies to your project:
 
 ```clojure
 :dependencies [[org.bouncycastle/bcprov-jdk15on "1.59"]
-               [crypto-gost "0.2.2"]]
+               [crypto-gost "0.2.3"]]
 ```
 
 Note: if you use Oracle JDK then  Bouncycastle jar should be in class path as separate library, not in uberjar, cause its content is signed.
